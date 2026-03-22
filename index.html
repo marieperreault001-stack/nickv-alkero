@@ -1,1 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Web App Capabilities -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Alkerö">
 
+    <!-- THE APP ICON (This creates the logo on his home screen) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%231f1f1f%22/><text y=%22.9em%22 x=%225%22 font-family=%22serif%22 font-weight=%22bold%22 font-size=%2270%22 fill=%22%23B5935B%22>A<tspan fill=%22%23B5935B%22>.</tspan></text></svg>">
+    
+    <title>Alkerö Operational Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Lora:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: #F7F5F0; 
+            color: #1F1F1F; 
+            -webkit-tap-highlight-color: transparent; 
+            line-height: 1.4;
+            user-select: none;
+        }
+        .font-tactical { font-family: 'Lora', serif; }
+        .brand-gold { color: #B5935B; }
+        .brand-sage { color: #6D8270; }
+        .card { background: white; border: 2px solid #D6D1C4; border-radius: 8px; }
+        
+        .btn-active-gold { 
+            background-color: #B5935B !important; 
+            color: white !important; 
+            border-color: #8E7142 !important;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-active-sage { 
+            background-color: #6D8270 !important; 
+            color: white !important; 
+            border-color: #4A5C4D !important;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button { min-height: 54px; transition: transform 0.1s active; }
+        button:active { transform: scale(0.98); }
+        
+        #confirm-modal { display: none; }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .late-alert { animation: pulse-red 2s infinite ease-in-out; }
+
+        input[type="time"] {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            background: #F3F4F6;
+            border: 2px solid #D1D5DB;
+            padding: 8px;
+            border-radius: 8px;
+            color: #1F1F1F;
+        }
+    </style>
+</head>
+<body class="p-5 pb-24">
+
+    <!-- LATE ALERT BANNER -->
+    <div id="late-night-banner" class="hidden mb-6">
+        <div class="late-alert bg-red-50 border-2 border-red-600 rounded-xl p-4 flex items-center gap-4">
+            <div class="text-3xl text-red-600">⚠️</div>
+            <div>
+                <p class="text-[11px] font-extrabold text-red-700 uppercase tracking-widest leading-none mb-1">Incomplete Log</p>
+                <p class="text-[10px] font-bold text-red-600 uppercase opacity-80">Final daily submission required</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="flex justify-between items-end mb-8 pt-2">
+        <div>
+            <h1 class="font-bold text-3xl tracking-tighter uppercase leading-none">ALKERÖ<span class="brand-gold">.</span></h1>
+            <p class="text-[10px] uppercase tracking-[0.3em] font-bold opacity-60 mt-1">Operational Readiness</p>
+        </div>
+        <div class="text-right">
+            <p class="text-xs font-bold brand-gold uppercase tracking-widest">Nick V.</p>
+            <p id="current-date" class="text-[10px] font-bold opacity-50 uppercase"></p>
+        </div>
+    </div>
+
+    <!-- 1. Nutrition & Foundations -->
+    <div class="card p-6 mb-5 shadow-sm">
+        <div class="flex justify-between items-center mb-5 border-b-2 border-gray-100 pb-3">
+            <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-gray-500">Foundation & Stacks</h2>
+            <button onclick="resetDay()" class="text-[10px] font-bold brand-gold uppercase tracking-tighter bg-gray-50 px-3 py-1 rounded border">Reset Day</button>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="w-full">
+                <span class="text-sm font-bold uppercase tracking-tight block mb-2">Protein Intake Level</span>
+                <div class="grid grid-cols-3 gap-2 protein-selector">
+                    <button id="prot-100" onclick="setProtein(100)" class="border-2 rounded-xl py-3 text-[11px] font-bold bg-white">100g<br><span class="text-[8px] opacity-60">BASE</span></button>
+                    <button id="prot-140" onclick="setProtein(140)" class="border-2 rounded-xl py-3 text-[11px] font-bold bg-white">140g<br><span class="text-[8px] opacity-60">FLOOR</span></button>
+                    <button id="prot-180" onclick="setProtein(180)" class="border-2 rounded-xl py-3 text-[11px] font-bold bg-white">180g<br><span class="text-[8px] opacity-60">PEAK</span></button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="toggleLog('morningStack')" id="btn-morningStack" class="flex flex-col items-center justify-center p-4 border-2 rounded-xl bg-white text-center shadow-sm">
+                    <p class="text-[11px] font-bold uppercase mb-1">Morning<br>Stack</p>
+                    <div id="check-morningStack" class="text-[9px] font-black opacity-30 tracking-widest uppercase text-black">PENDING</div>
+                </button>
+                <button onclick="toggleLog('eveningStack')" id="btn-eveningStack" class="flex flex-col items-center justify-center p-4 border-2 rounded-xl bg-white text-center shadow-sm">
+                    <p class="text-[11px] font-bold uppercase mb-1">Evening<br>Stack</p>
+                    <div id="check-eveningStack" class="text-[9px] font-black opacity-30 tracking-widest uppercase text-black">PENDING</div>
+                </button>
+            </div>
+
+            <button onclick="toggleLog('psyllium')" id="btn-psyllium" class="w-full flex justify-between items-center px-5 py-4 border-2 rounded-xl bg-white shadow-sm">
+                <span class="text-sm font-bold uppercase tracking-tight">Psyllium Fiber</span>
+                <div id="check-psyllium" class="opacity-10 text-[10px] font-bold uppercase">OFF</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Movement Phase -->
+    <div class="card p-6 mb-6 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-gray-500 mb-5 border-b-2 border-gray-100 pb-3">Movement Signals</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="toggleLog('strength')" id="btn-strength" class="p-4 border-2 rounded-xl bg-white text-center shadow-sm flex flex-col items-center justify-center">
+                <p class="text-[11px] font-bold uppercase">Strength</p>
+                <p id="sub-strength" class="text-[9px] font-bold opacity-40">OFF</p>
+            </button>
+            <button onclick="toggleLog('pilates')" id="btn-pilates" class="p-4 border-2 rounded-xl bg-white text-center shadow-sm flex flex-col items-center justify-center">
+                <p class="text-[11px] font-bold uppercase">Pilates</p>
+                <p id="sub-pilates" class="text-[9px] font-bold opacity-40">OFF</p>
+            </button>
+            <button onclick="toggleLog('walk')" id="btn-walk" class="p-4 border-2 rounded-xl bg-white text-center shadow-sm flex flex-col items-center justify-center">
+                <p class="text-[11px] font-bold uppercase">Walk</p>
+                <p id="sub-walk" class="text-[9px] font-bold opacity-40">OFF</p>
+            </button>
+            <button onclick="toggleLog('golf')" id="btn-golf" class="p-4 border-2 rounded-xl bg-white text-center shadow-sm flex flex-col items-center justify-center">
+                <p class="text-[11px] font-bold uppercase">Golf</p>
+                <p id="sub-golf" class="text-[9px] font-bold opacity-40">OFF</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Final Submission -->
+    <button onclick="saveDaily()" class="w-full bg-black text-white py-5 text-sm font-bold uppercase tracking-[0.3em] rounded-xl mb-8 active:scale-[0.98] transition-transform shadow-lg border-2 border-black">
+        Submit Daily Log
+    </button>
+
+    <!-- Weekly Readiness Card -->
+    <div class="card p-7 mb-6 border-black border-2 bg-gray-50">
+        <div class="flex justify-between items-start mb-5">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-black">Weekly Readiness</h2>
+            <div class="flex gap-4">
+                <button id="undo-btn" onclick="undoLast()" class="hidden text-[10px] font-bold brand-sage border-b-2 border-sage uppercase tracking-tighter">Undo Last</button>
+                <button onclick="showResetModal()" class="text-[10px] font-bold text-red-800 opacity-60 uppercase tracking-tighter">Reset Cycle</button>
+            </div>
+        </div>
+        <div class="flex items-baseline gap-2 mb-4">
+            <span id="fmc-score" class="text-5xl font-bold tracking-tighter text-black">0</span>
+            <span class="text-lg font-bold opacity-30">/ 56</span>
+        </div>
+        <div class="w-full bg-gray-200 h-4 rounded-full overflow-hidden border border-gray-300">
+            <div id="progress-bar" class="h-full bg-black transition-all duration-1000 ease-out" style="width: 0%"></div>
+        </div>
+        <p id="status-text" class="text-xs mt-6 mb-8 font-tactical italic font-semibold text-gray-700 leading-relaxed"></p>
+        
+        <!-- EXPORT BUTTON AREA -->
+        <div class="space-y-2">
+            <button onclick="exportReport()" class="w-full border-2 border-gray-400 text-black py-4 rounded-lg text-[11px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-3 bg-white active:bg-gray-100 shadow-sm transition-all">
+                <svg class="w-5 h-5 brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Send Progress to Marie
+            </button>
+            <p id="last-export-display" class="text-[9px] font-bold text-center uppercase tracking-widest opacity-40">
+                Last sent: Never
+            </p>
+        </div>
+    </div>
+
+    <!-- 3. System Configuration -->
+    <div class="card p-6 mb-8 bg-gray-100 border-gray-300">
+        <h2 class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            System Settings
+        </h2>
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-bold uppercase mb-1">Cutoff Trigger</p>
+                <p class="text-[9px] font-medium opacity-60">Daily alert threshold</p>
+            </div>
+            <input type="time" id="cutoff-time" onchange="updateCutoffTime()" class="text-sm">
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-black text-white px-10 py-4 rounded-full text-xs font-bold uppercase tracking-widest opacity-0 transition-all duration-300 pointer-events-none z-[100] shadow-2xl text-center min-w-[250px]">
+        LOGGED
+    </div>
+
+    <!-- Reset Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-6 z-[200] backdrop-blur-md">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-xs text-center border-4 border-red-800">
+            <p class="text-sm font-bold uppercase tracking-[0.2em] mb-4 text-red-800">Clear Weekly Data?</p>
+            <p class="text-xs font-medium mb-8 leading-relaxed font-tactical italic text-gray-600">This resets your weekly score to zero.</p>
+            <div class="flex flex-col gap-3">
+                <button onclick="resetCycle()" class="w-full py-4 bg-red-800 text-white text-xs font-bold uppercase tracking-widest rounded-lg">Confirm Reset</button>
+                <button onclick="hideResetModal()" class="w-full py-4 border-2 text-xs font-bold uppercase tracking-widest rounded-lg">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WEEKLY_GOAL = 56;
+        
+        let dailyState = { 
+            protein: 0,
+            morningStack: false, 
+            eveningStack: false, 
+            psyllium: false,
+            strength: false, 
+            pilates: false, 
+            walk: false, 
+            golf: false
+        };
+        
+        let totalUnits = parseInt(localStorage.getItem('alkero_units')) || 0;
+        let lastAddedAmount = parseInt(localStorage.getItem('alkero_last_added')) || 0;
+        let lastSubmitDate = localStorage.getItem('alkero_last_submit_date') || "";
+        let lastExportDate = localStorage.getItem('alkero_last_export_date') || "Never";
+        let alertCutoff = localStorage.getItem('alkero_alert_cutoff') || "22:00";
+
+        function exportReport() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const fullStamp = `${dateStr} @ ${timeStr}`;
+            
+            const readinessText = document.getElementById('status-text').innerText;
+            const reportBody = `ALKERÖ STATUS REPORT [${dateStr}]%0A------------------------%0ACLIENT: Nick V.%0AWEEKLY SCORE: ${totalUnits} / 56%0AREADINESS: ${readinessText}%0A------------------------%0ASent via Alkerö Local Tracker.`;
+            const subject = `Alkerö Progress Report: Nick V. (${dateStr})`;
+            
+            // Save export time
+            lastExportDate = fullStamp;
+            localStorage.setItem('alkero_last_export_date', lastExportDate);
+            
+            // 1. Copy to clipboard (Backup)
+            const plainText = reportBody.replace(/%0A/g, '\n');
+            const el = document.createElement('textarea');
+            el.value = plainText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            // 2. Open Email Client
+            window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${reportBody}`;
+            
+            showToast('REPORT READY & EMAIL OPENED');
+            updateUI();
+        }
+
+        function updateCutoffTime() {
+            const timeVal = document.getElementById('cutoff-time').value;
+            alertCutoff = timeVal;
+            localStorage.setItem('alkero_alert_cutoff', timeVal);
+            showToast('CUTOFF UPDATED');
+            checkLateNightWarning();
+        }
+
+        function checkLateNightWarning() {
+            const now = new Date();
+            const banner = document.getElementById('late-night-banner');
+            const [cutoffHour, cutoffMin] = alertCutoff.split(':').map(Number);
+            const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+            const cutoffMinutes = (cutoffHour * 60) + cutoffMin;
+
+            if (currentMinutes >= cutoffMinutes && lastSubmitDate !== now.toDateString()) {
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function updateUI() {
+            const now = new Date();
+            document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            document.getElementById('cutoff-time').value = alertCutoff;
+            document.getElementById('last-export-display').innerText = `Last sent: ${lastExportDate}`;
+            checkLateNightWarning();
+
+            [100, 140, 180].forEach(val => {
+                const btn = document.getElementById('prot-' + val);
+                btn.className = (dailyState.protein === val) ? "border-2 rounded-xl py-3 text-[11px] font-bold btn-active-gold shadow-md" : "border-2 rounded-xl py-3 text-[11px] font-bold bg-white border-gray-200";
+            });
+
+            updateBtnVisuals('morningStack', 'btn-active-gold', 'COMPLETED');
+            updateBtnVisuals('eveningStack', 'btn-active-gold', 'COMPLETED');
+            updateBtnVisuals('psyllium', 'btn-active-gold', 'COMPLETED');
+            updateBtnVisuals('strength', 'btn-active-sage', 'DONE');
+            updateBtnVisuals('pilates', 'btn-active-sage', 'DONE');
+            updateBtnVisuals('walk', 'btn-active-sage', 'DONE');
+            updateBtnVisuals('golf', 'btn-active-sage', 'DONE');
+
+            document.getElementById('fmc-score').innerText = totalUnits;
+            const percentage = Math.min((totalUnits / WEEKLY_GOAL) * 100, 100);
+            document.getElementById('progress-bar').style.width = percentage + '%';
+            
+            if (lastAddedAmount > 0) document.getElementById('undo-btn').classList.remove('hidden');
+            else document.getElementById('undo-btn').classList.add('hidden');
+
+            const statusEl = document.getElementById('status-text');
+            if(totalUnits >= 45) statusEl.innerText = "Status: Optimal Readiness (FMC). System fortified.";
+            else if (totalUnits > 15) statusEl.innerText = "Status: Partial Capability. Maintenance ongoing.";
+            else statusEl.innerText = "Status: Initializing daily operational inputs.";
+        }
+
+        function updateBtnVisuals(key, activeClass, activeLabel) {
+            const btn = document.getElementById('btn-' + key);
+            const check = document.getElementById('check-' + key);
+            const subText = document.getElementById('sub-' + key);
+            if (dailyState[key]) {
+                btn.className = `${btn.className.split(' ').filter(c => !c.startsWith('btn-active') && c !== 'bg-white' && c !== 'border-gray-200').join(' ')} ${activeClass}`;
+                if(check) { check.style.opacity = "1"; check.innerText = activeLabel; }
+                if(subText) { subText.innerText = activeLabel; subText.style.opacity = "1"; }
+            } else {
+                btn.className = `${btn.className.split(' ').filter(c => !c.startsWith('btn-active')).join(' ')} bg-white border-gray-200`;
+                if(check) { check.style.opacity = "0.2"; check.innerText = (key.includes('Stack') ? 'PENDING' : 'OFF'); }
+                if(subText) { subText.innerText = "OFF"; subText.style.opacity = "0.4"; }
+            }
+        }
+
+        function setProtein(val) { dailyState.protein = (dailyState.protein === val) ? 0 : val; updateUI(); }
+        function toggleLog(key) { dailyState[key] = !dailyState[key]; updateUI(); }
+        function resetDay() { Object.keys(dailyState).forEach(k => dailyState[k] = (k === 'protein' ? 0 : false)); showToast('SELECTION CLEARED'); updateUI(); }
+
+        function saveDaily() {
+            let count = (dailyState.protein > 0 ? 1 : 0);
+            Object.keys(dailyState).forEach(k => { if(k !== 'protein' && dailyState[k]) count++; });
+            if (count === 0) return;
+            totalUnits += count;
+            lastAddedAmount = count;
+            lastSubmitDate = new Date().toDateString();
+            localStorage.setItem('alkero_units', totalUnits);
+            localStorage.setItem('alkero_last_added', lastAddedAmount);
+            localStorage.setItem('alkero_last_submit_date', lastSubmitDate);
+            resetDay();
+            showToast('MISSION LOGGED');
+            updateUI();
+        }
+
+        function undoLast() {
+            if (lastAddedAmount > 0) {
+                totalUnits -= lastAddedAmount;
+                lastAddedAmount = 0;
+                localStorage.setItem('alkero_units', totalUnits);
+                localStorage.setItem('alkero_last_added', 0);
+                showToast('REVERSED');
+                updateUI();
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.style.opacity = "1";
+            setTimeout(() => { toast.style.opacity = "0"; }, 2500);
+        }
+
+        function showResetModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
+        function hideResetModal() { document.getElementById('confirm-modal').style.display = 'none'; }
+        function resetCycle() {
+            totalUnits = 0; lastAddedAmount = 0; lastSubmitDate = ""; lastExportDate = "Never";
+            localStorage.setItem('alkero_units', 0);
+            localStorage.setItem('alkero_last_added', 0);
+            localStorage.setItem('alkero_last_submit_date', "");
+            localStorage.setItem('alkero_last_export_date', "Never");
+            resetDay(); hideResetModal(); showToast('CYCLE ZEROED'); updateUI();
+        }
+
+        setInterval(checkLateNightWarning, 30000);
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
